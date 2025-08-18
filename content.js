@@ -1,4 +1,4 @@
-// ChatGPT Navigator Extension - Single Chat Navigation
+// ChatGPT Navigator Extension - Fixed Scroll Version
 ;(() => {
   let searchIndex = 0
   let searchResults = []
@@ -30,7 +30,7 @@
         </div>
         <div class="search-container">
           <div class="search-input-container">
-            <input type="text" id="search-input" placeholder="Search in this chat..." />
+            <input type="text" id="search-input" placeholder="Search conversation..." />
             <button class="search-btn" id="search-btn" title="Search">
               <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
                 <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
@@ -51,65 +51,89 @@
     return panel
   }
 
-  // Get the main conversation container
-  function getConversationContainer() {
-    // Try multiple selectors for ChatGPT's conversation area
-    const selectors = [
-      'main[class*="conversation"]',
+  // Enhanced scroll functions with multiple fallback methods
+  function scrollToTop() {
+    console.log("[v0] Scroll to top clicked")
+
+    // Method 1: Try to find the main conversation container
+    const conversationSelectors = [
       '[role="main"]',
-      "main",
-      ".conversation",
+      ".conversation-turn-common",
       '[data-testid="conversation-turn"]',
-      'div[class*="conversation"]',
+      ".flex.flex-col.text-sm",
+      "main",
+      ".overflow-hidden",
     ]
 
-    for (const selector of selectors) {
-      const container = document.querySelector(selector)
-      if (container) {
-        console.log("[v0] Found conversation container:", selector)
-        return container
+    let scrollContainer = null
+
+    for (const selector of conversationSelectors) {
+      const element = document.querySelector(selector)
+      if (element && element.scrollHeight > element.clientHeight) {
+        scrollContainer = element
+        console.log("[v0] Found scroll container:", selector)
+        break
       }
     }
 
-    console.log("[v0] Using document.documentElement as fallback")
-    return document.documentElement
-  }
-
-  // Scroll functions with debugging
-  function scrollToTop() {
-    console.log("[v0] Scroll to top clicked")
-    const container = getConversationContainer()
-
-    // Try multiple scroll methods
-    if (container.scrollTo) {
-      container.scrollTo({ top: 0, behavior: "smooth" })
-      console.log("[v0] Used container.scrollTo")
+    if (scrollContainer) {
+      console.log("[v0] Scrolling container to top")
+      scrollContainer.scrollTo({ top: 0, behavior: "smooth" })
     } else {
-      container.scrollTop = 0
-      console.log("[v0] Used container.scrollTop")
+      console.log("[v0] No scroll container found, using window scroll")
+      window.scrollTo({ top: 0, behavior: "smooth" })
     }
 
-    // Also try window scroll as backup
-    window.scrollTo({ top: 0, behavior: "smooth" })
-    console.log("[v0] Also tried window.scrollTo")
+    // Additional fallback - try scrolling all potentially scrollable elements
+    const scrollableElements = document.querySelectorAll("*")
+    scrollableElements.forEach((el) => {
+      if (el.scrollHeight > el.clientHeight && el.scrollTop > 0) {
+        console.log("[v0] Found scrollable element, scrolling to top:", el)
+        el.scrollTo({ top: 0, behavior: "smooth" })
+      }
+    })
   }
 
   function scrollToBottom() {
     console.log("[v0] Scroll to bottom clicked")
-    const container = getConversationContainer()
 
-    // Try multiple scroll methods
-    if (container.scrollTo) {
-      container.scrollTo({ top: container.scrollHeight, behavior: "smooth" })
-      console.log("[v0] Used container.scrollTo to", container.scrollHeight)
-    } else {
-      container.scrollTop = container.scrollHeight
-      console.log("[v0] Used container.scrollTop to", container.scrollHeight)
+    // Method 1: Try to find the main conversation container
+    const conversationSelectors = [
+      '[role="main"]',
+      ".conversation-turn-common",
+      '[data-testid="conversation-turn"]',
+      ".flex.flex-col.text-sm",
+      "main",
+      ".overflow-hidden",
+    ]
+
+    let scrollContainer = null
+
+    for (const selector of conversationSelectors) {
+      const element = document.querySelector(selector)
+      if (element && element.scrollHeight > element.clientHeight) {
+        scrollContainer = element
+        console.log("[v0] Found scroll container:", selector)
+        break
+      }
     }
 
-    // Also try window scroll as backup
-    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" })
-    console.log("[v0] Also tried window.scrollTo to", document.body.scrollHeight)
+    if (scrollContainer) {
+      console.log("[v0] Scrolling container to bottom")
+      scrollContainer.scrollTo({ top: scrollContainer.scrollHeight, behavior: "smooth" })
+    } else {
+      console.log("[v0] No scroll container found, using window scroll")
+      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" })
+    }
+
+    // Additional fallback - try scrolling all potentially scrollable elements
+    const scrollableElements = document.querySelectorAll("*")
+    scrollableElements.forEach((el) => {
+      if (el.scrollHeight > el.clientHeight) {
+        console.log("[v0] Found scrollable element, scrolling to bottom:", el)
+        el.scrollTo({ top: el.scrollHeight, behavior: "smooth" })
+      }
+    })
   }
 
   // Search functionality
@@ -129,40 +153,34 @@
   }
 
   function searchInConversation(term) {
-    console.log("[v0] Searching for:", term)
     if (!term.trim()) return
 
+    console.log("[v0] Searching for:", term)
     clearHighlights()
     searchResults = []
     currentSearchTerm = term
 
-    // Find messages in the current conversation
+    // Find all message containers in the current conversation
     const messageSelectors = [
       "[data-message-author-role]",
       '[data-testid*="conversation-turn"]',
+      ".group.w-full",
+      ".flex.flex-col.pb-9",
       ".message",
-      '[class*="message"]',
-      '[role="presentation"]',
     ]
 
     let messages = []
     for (const selector of messageSelectors) {
       messages = document.querySelectorAll(selector)
       if (messages.length > 0) {
-        console.log("[v0] Found", messages.length, "messages using selector:", selector)
+        console.log("[v0] Found messages with selector:", selector, "Count:", messages.length)
         break
       }
     }
 
-    if (messages.length === 0) {
-      console.log("[v0] No messages found, trying fallback")
-      // Fallback: look for any div with text content
-      messages = document.querySelectorAll("div")
-    }
-
     messages.forEach((message, index) => {
       const textContent = message.textContent.toLowerCase()
-      if (textContent.includes(term.toLowerCase()) && textContent.length > 10) {
+      if (textContent.includes(term.toLowerCase())) {
         searchResults.push({
           element: message,
           index: index,
@@ -189,7 +207,7 @@
       }
     })
 
-    console.log("[v0] Found", searchResults.length, "search results")
+    console.log("[v0] Search results:", searchResults.length)
     updateSearchInfo()
     if (searchResults.length > 0) {
       searchIndex = 0
@@ -199,8 +217,6 @@
 
   function scrollToSearchResult(index) {
     if (searchResults.length === 0) return
-
-    console.log("[v0] Scrolling to search result", index + 1, "of", searchResults.length)
 
     // Remove previous active highlight
     document.querySelectorAll(".search-highlight.active").forEach((el) => {
@@ -245,7 +261,6 @@
   }
 
   function clearSearch() {
-    console.log("[v0] Clearing search")
     clearHighlights()
     searchResults = []
     searchIndex = 0
@@ -256,18 +271,13 @@
 
   // Initialize the extension
   function init() {
-    console.log("[v0] Initializing ChatGPT Navigator")
-
     // Check if already initialized
-    if (document.getElementById("chatgpt-navigator")) {
-      console.log("[v0] Already initialized")
-      return
-    }
+    if (document.getElementById("chatgpt-navigator")) return
 
+    console.log("[v0] Initializing ChatGPT Navigator")
     const panel = createNavigationPanel()
-    console.log("[v0] Created navigation panel")
 
-    // Event listeners with debugging
+    // Event listeners with enhanced debugging
     const scrollTopBtn = document.getElementById("scroll-top")
     const scrollBottomBtn = document.getElementById("scroll-bottom")
 
@@ -275,18 +285,20 @@
       scrollTopBtn.addEventListener("click", (e) => {
         console.log("[v0] Top button clicked")
         e.preventDefault()
+        e.stopPropagation()
         scrollToTop()
       })
-      console.log("[v0] Added scroll-top listener")
+      console.log("[v0] Top button event listener added")
     }
 
     if (scrollBottomBtn) {
       scrollBottomBtn.addEventListener("click", (e) => {
         console.log("[v0] Bottom button clicked")
         e.preventDefault()
+        e.stopPropagation()
         scrollToBottom()
       })
-      console.log("[v0] Added scroll-bottom listener")
+      console.log("[v0] Bottom button event listener added")
     }
 
     const searchInput = document.getElementById("search-input")
@@ -294,7 +306,6 @@
 
     if (searchBtn) {
       searchBtn.addEventListener("click", () => {
-        console.log("[v0] Search button clicked")
         searchInConversation(searchInput.value)
       })
     }
@@ -302,32 +313,23 @@
     if (searchInput) {
       searchInput.addEventListener("keypress", (e) => {
         if (e.key === "Enter") {
-          console.log("[v0] Search enter pressed")
           searchInConversation(searchInput.value)
         }
       })
     }
 
-    const nextBtn = document.getElementById("search-next")
-    const prevBtn = document.getElementById("search-prev")
-    const clearBtn = document.getElementById("search-clear")
+    const searchNext = document.getElementById("search-next")
+    const searchPrev = document.getElementById("search-prev")
+    const searchClear = document.getElementById("search-clear")
 
-    if (nextBtn) {
-      nextBtn.addEventListener("click", nextSearchResult)
-    }
-
-    if (prevBtn) {
-      prevBtn.addEventListener("click", prevSearchResult)
-    }
-
-    if (clearBtn) {
-      clearBtn.addEventListener("click", clearSearch)
-    }
+    if (searchNext) searchNext.addEventListener("click", nextSearchResult)
+    if (searchPrev) searchPrev.addEventListener("click", prevSearchResult)
+    if (searchClear) searchClear.addEventListener("click", clearSearch)
 
     // Toggle panel
-    const toggleBtn = document.getElementById("nav-toggle")
-    if (toggleBtn) {
-      toggleBtn.addEventListener("click", () => {
+    const navToggle = document.getElementById("nav-toggle")
+    if (navToggle) {
+      navToggle.addEventListener("click", () => {
         const content = document.getElementById("nav-content")
         const toggle = document.getElementById("nav-toggle")
         const isCollapsed = content.style.display === "none"
@@ -336,8 +338,6 @@
         toggle.textContent = isCollapsed ? "−" : "+"
       })
     }
-
-    console.log("[v0] All event listeners added")
 
     // Keyboard shortcuts
     document.addEventListener("keydown", (e) => {
@@ -371,13 +371,15 @@
         }
       }
     })
+
+    console.log("[v0] ChatGPT Navigator initialized successfully")
   }
 
   // Wait for page to load and initialize
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init)
   } else {
-    setTimeout(init, 1000)
+    init()
   }
 
   // Re-initialize on navigation (for SPA)
@@ -386,7 +388,7 @@
     const url = location.href
     if (url !== lastUrl) {
       lastUrl = url
-      setTimeout(init, 2000)
+      setTimeout(init, 1000)
     }
   }).observe(document, { subtree: true, childList: true })
 })()

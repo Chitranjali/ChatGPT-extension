@@ -2,13 +2,18 @@
   "manifest_version": 3,
   "name": "ChatGPT Navigator",
   "version": "1.0",
-  "description": "A simple sidebar navigator for ChatGPT: scroll, search, and jump easily.",
+  "description": "Navigate ChatGPT conversations with scroll controls and search functionality",
+  "permissions": ["activeTab"],
   "content_scripts": [
     {
-      "matches": ["https://chatgpt.com/*"],
+      "matches": ["https://chat.openai.com/*", "https://chatgpt.com/*"],
       "js": ["content.js"],
-      "css": ["styles.css"]
+      "css": ["styles.css"],
+      "run_at": "document_end"
     }
   ],
-  "permissions": []
+  "icons": {
+    "16": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTggMkw2IDRIOVYxMkg3VjE0TDggMTZMOSAxNFYxMkg3VjRIMTBMOCAyWiIgZmlsbD0iIzAwNzNlNiIvPgo8L3N2Zz4K",
+    "48": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTI0IDZMMTggMTJIMjdWMzZIMjFWNDJMMjQgNDhMMjcgNDJWMzZIMjFWMTJIMzBMMjQgNloiIGZpbGw9IiMwMDczZTYiLz4KPC9zdmc+Cg=="
+  }
 }

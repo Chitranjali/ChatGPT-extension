@@ -72,6 +72,32 @@ function createSidebar() {
     });
   }
 
+  // Scroll to top
+document.getElementById('chatgpt-scroll-top').addEventListener('click', () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+// Scroll to bottom
+document.getElementById('chatgpt-scroll-bottom').addEventListener('click', () => {
+  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+});
+
+// Search button
+document.getElementById('chatgpt-search-btn').addEventListener('click', () => {
+  const query = document.getElementById('chatgpt-search').value.toLowerCase().trim();
+  if (!query) return;
+
+  // find all messages
+  const messages = document.querySelectorAll('.markdown'); 
+  messages.forEach(msg => {
+    if (msg.innerText.toLowerCase().includes(query)) {
+      msg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      msg.style.backgroundColor = 'yellow'; // temporary highlight
+    }
+  });
+});
+
+
   searchBtn.addEventListener('click', runSearch);
 }
 

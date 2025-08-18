@@ -30,3 +30,13 @@
   font-size: 18px;
   cursor: pointer;
 }
+#chatgpt-search {
+  width: 90%;
+  padding: 6px 10px;
+  margin: 10px 0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  color: black;           /* text color */
+  background-color: white; /* background for contrast */
+}

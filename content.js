@@ -1,124 +1,357 @@
+// ChatGPT Navigator Extension
+;(() => {
+  let searchIndex = 0
+  let searchResults = []
+  let currentSearchTerm = ""
 
-export default function Page() {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">ChatGPT Navigator Extension</h1>
-          <p className="text-xl text-gray-600">
-            A Chrome extension to enhance your ChatGPT experience with scroll controls and search functionality
-          </p>
+  // Create the navigation panel
+  function createNavigationPanel() {
+    const panel = document.createElement("div")
+    panel.id = "chatgpt-navigator"
+    panel.innerHTML = `
+      <div class="nav-header">
+        <span class="nav-title">Navigator</span>
+        <button class="nav-toggle" id="nav-toggle">−</button>
+      </div>
+      <div class="nav-content" id="nav-content">
+        <div class="nav-buttons">
+          <button class="nav-btn" id="scroll-top" title="Scroll to Top">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M8 2L4 6h8L8 2zM8 14V6"/>
+            </svg>
+            Top
+          </button>
+          <button class="nav-btn" id="scroll-bottom" title="Scroll to Bottom">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M8 14l4-4H4l4 4zM8 2v8"/>
+            </svg>
+            Bottom
+          </button>
         </div>
-
-        <div className="grid md:grid-cols-2 gap-8 mb-12">
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">Features</h2>
-            <ul className="space-y-3 text-gray-600">
-              <li className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                Scroll to top/bottom with one click
-              </li>
-              <li className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                Search within long conversations
-              </li>
-              <li className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                Highlight search results with navigation
-              </li>
-              <li className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                Responsive design for all screen sizes
-              </li>
-              <li className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                Dark mode support
-              </li>
-              <li className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                Keyboard shortcuts
-              </li>
-            </ul>
+        <div class="search-container">
+          <div class="search-input-container">
+            <input type="text" id="search-input" placeholder="Search conversation..." />
+            <button class="search-btn" id="search-btn" title="Search">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+              </svg>
+            </button>
           </div>
-
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">Installation</h2>
-            <ol className="space-y-3 text-gray-600">
-              <li className="flex gap-3">
-                <span className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-semibold">
-                  1
-                </span>
-                Download the extension files from this project
-              </li>
-              <li className="flex gap-3">
-                <span className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-semibold">
-                  2
-                </span>
-                Create a new folder and save the files there
-              </li>
-              <li className="flex gap-3">
-                <span className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-semibold">
-                  3
-                </span>
-                Open Chrome → Extensions → Developer mode
-              </li>
-              <li className="flex gap-3">
-                <span className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-semibold">
-                  4
-                </span>
-                Click "Load unpacked" and select your folder
-              </li>
-              <li className="flex gap-3">
-                <span className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-semibold">
-                  5
-                </span>
-                Visit ChatGPT to see the extension in action
-              </li>
-            </ol>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-4">Extension Files</h2>
-          <p className="text-gray-600 mb-4">This project contains three essential files for the Chrome extension:</p>
-          <div className="grid md:grid-cols-3 gap-4">
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="font-semibold text-gray-800 mb-2">manifest.json</h3>
-              <p className="text-sm text-gray-600">Extension configuration and permissions</p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="font-semibold text-gray-800 mb-2">content.js</h3>
-              <p className="text-sm text-gray-600">Main functionality and event handlers</p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="font-semibold text-gray-800 mb-2">styles.css</h3>
-              <p className="text-sm text-gray-600">UI styling and responsive design</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <h2 className="text-xl font-semibold text-blue-800 mb-3">Keyboard Shortcuts</h2>
-          <div className="grid md:grid-cols-2 gap-4 text-sm">
-            <div>
-              <kbd className="px-2 py-1 bg-white border border-gray-300 rounded text-xs">Ctrl + Home</kbd>
-              <span className="ml-2 text-blue-700">Scroll to top</span>
-            </div>
-            <div>
-              <kbd className="px-2 py-1 bg-white border border-gray-300 rounded text-xs">Ctrl + End</kbd>
-              <span className="ml-2 text-blue-700">Scroll to bottom</span>
-            </div>
-            <div>
-              <kbd className="px-2 py-1 bg-white border border-gray-300 rounded text-xs">Ctrl + Shift + F</kbd>
-              <span className="ml-2 text-blue-700">Focus search</span>
-            </div>
-            <div>
-              <kbd className="px-2 py-1 bg-white border border-gray-300 rounded text-xs">F3</kbd>
-              <span className="ml-2 text-blue-700">Next search result</span>
-            </div>
+          <div class="search-controls" id="search-controls" style="display: none;">
+            <span class="search-info" id="search-info">0 of 0</span>
+            <button class="search-nav-btn" id="search-prev" title="Previous">↑</button>
+            <button class="search-nav-btn" id="search-next" title="Next">↓</button>
+            <button class="search-nav-btn" id="search-clear" title="Clear">×</button>
           </div>
         </div>
       </div>
-    </div>
-  )
-}
+    `
+
+    document.body.appendChild(panel)
+    return panel
+  }
+
+  function scrollToTop() {
+    console.log("[v0] Scroll to top triggered")
+
+    // Try multiple scroll targets for better compatibility
+    const scrollTargets = [
+      document.documentElement,
+      document.body,
+      document.querySelector("main"),
+      document.querySelector('[role="main"]'),
+      document.querySelector(".conversation-turn-container")?.parentElement,
+    ].filter(Boolean)
+
+    scrollTargets.forEach((target) => {
+      if (target) {
+        target.scrollTop = 0
+      }
+    })
+
+    // Also use window scroll as fallback
+    window.scrollTo({ top: 0, behavior: "smooth" })
+    console.log("[v0] Scroll to top completed")
+  }
+
+  function scrollToBottom() {
+    console.log("[v0] Scroll to bottom triggered")
+
+    // Try multiple scroll targets
+    const scrollTargets = [
+      document.documentElement,
+      document.body,
+      document.querySelector("main"),
+      document.querySelector('[role="main"]'),
+      document.querySelector(".conversation-turn-container")?.parentElement,
+    ].filter(Boolean)
+
+    scrollTargets.forEach((target) => {
+      if (target) {
+        target.scrollTop = target.scrollHeight
+      }
+    })
+
+    // Also use window scroll as fallback
+    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" })
+    console.log("[v0] Scroll to bottom completed")
+  }
+
+  function highlightText(text, term) {
+    if (!term) return text
+    const regex = new RegExp(`(${term})`, "gi")
+    return text.replace(regex, '<mark class="search-highlight">$1</mark>')
+  }
+
+  function clearHighlights() {
+    const highlights = document.querySelectorAll(".search-highlight")
+    highlights.forEach((highlight) => {
+      const parent = highlight.parentNode
+      parent.replaceChild(document.createTextNode(highlight.textContent), highlight)
+      parent.normalize()
+    })
+  }
+
+  function searchInConversation(term) {
+    console.log("[v0] Search triggered with term:", term)
+
+    if (!term.trim()) {
+      console.log("[v0] Empty search term")
+      return
+    }
+
+    clearHighlights()
+    searchResults = []
+    currentSearchTerm = term
+
+    const messageSelectors = [
+      "[data-message-author-role]",
+      ".message",
+      '[class*="message"]',
+      ".conversation-turn",
+      '[data-testid*="conversation"]',
+      ".group",
+    ]
+
+    let messages = []
+    messageSelectors.forEach((selector) => {
+      const found = document.querySelectorAll(selector)
+      if (found.length > 0) {
+        messages = Array.from(found)
+        console.log("[v0] Found messages with selector:", selector, "Count:", found.length)
+      }
+    })
+
+    if (messages.length === 0) {
+      console.log("[v0] No messages found, trying fallback")
+      // Fallback: search in any element containing text
+      messages = Array.from(document.querySelectorAll("div")).filter(
+        (div) => div.textContent.trim().length > 20 && !div.querySelector("input, button, textarea"),
+      )
+    }
+
+    console.log("[v0] Total messages to search:", messages.length)
+
+    messages.forEach((message, index) => {
+      const textContent = message.textContent.toLowerCase()
+      if (textContent.includes(term.toLowerCase())) {
+        searchResults.push({
+          element: message,
+          index: index,
+        })
+
+        // Highlight the text
+        const walker = document.createTreeWalker(message, NodeFilter.SHOW_TEXT, null, false)
+
+        const textNodes = []
+        let node
+        while ((node = walker.nextNode())) {
+          if (node.textContent.toLowerCase().includes(term.toLowerCase())) {
+            textNodes.push(node)
+          }
+        }
+
+        textNodes.forEach((textNode) => {
+          const parent = textNode.parentNode
+          const highlightedHTML = highlightText(textNode.textContent, term)
+          const wrapper = document.createElement("span")
+          wrapper.innerHTML = highlightedHTML
+          parent.replaceChild(wrapper, textNode)
+        })
+      }
+    })
+
+    console.log("[v0] Search results found:", searchResults.length)
+    updateSearchInfo()
+    if (searchResults.length > 0) {
+      searchIndex = 0
+      scrollToSearchResult(0)
+    }
+  }
+
+  function scrollToSearchResult(index) {
+    if (searchResults.length === 0) return
+
+    // Remove previous active highlight
+    document.querySelectorAll(".search-highlight.active").forEach((el) => {
+      el.classList.remove("active")
+    })
+
+    const result = searchResults[index]
+    result.element.scrollIntoView({ behavior: "smooth", block: "center" })
+
+    // Add active class to current result highlights
+    const highlights = result.element.querySelectorAll(".search-highlight")
+    highlights.forEach((highlight) => highlight.classList.add("active"))
+
+    console.log("[v0] Scrolled to search result:", index + 1, "of", searchResults.length)
+  }
+
+  function updateSearchInfo() {
+    const info = document.getElementById("search-info")
+    const controls = document.getElementById("search-controls")
+
+    if (searchResults.length > 0) {
+      info.textContent = `${searchIndex + 1} of ${searchResults.length}`
+      controls.style.display = "flex"
+    } else if (currentSearchTerm) {
+      info.textContent = "No results"
+      controls.style.display = "flex"
+    } else {
+      controls.style.display = "none"
+    }
+  }
+
+  function nextSearchResult() {
+    if (searchResults.length === 0) return
+    searchIndex = (searchIndex + 1) % searchResults.length
+    scrollToSearchResult(searchIndex)
+    updateSearchInfo()
+  }
+
+  function prevSearchResult() {
+    if (searchResults.length === 0) return
+    searchIndex = (searchIndex - 1 + searchResults.length) % searchResults.length
+    scrollToSearchResult(searchIndex)
+    updateSearchInfo()
+  }
+
+  function clearSearch() {
+    clearHighlights()
+    searchResults = []
+    searchIndex = 0
+    currentSearchTerm = ""
+    document.getElementById("search-input").value = ""
+    updateSearchInfo()
+    console.log("[v0] Search cleared")
+  }
+
+  // Initialize the extension
+  function init() {
+    console.log("[v0] Initializing ChatGPT Navigator")
+
+    // Check if already initialized
+    if (document.getElementById("chatgpt-navigator")) {
+      console.log("[v0] Already initialized")
+      return
+    }
+
+    const panel = createNavigationPanel()
+    console.log("[v0] Navigation panel created")
+
+    document.getElementById("scroll-top").addEventListener("click", (e) => {
+      e.preventDefault()
+      console.log("[v0] Top button clicked")
+      scrollToTop()
+    })
+
+    document.getElementById("scroll-bottom").addEventListener("click", (e) => {
+      e.preventDefault()
+      console.log("[v0] Bottom button clicked")
+      scrollToBottom()
+    })
+
+    const searchInput = document.getElementById("search-input")
+    const searchBtn = document.getElementById("search-btn")
+
+    searchBtn.addEventListener("click", (e) => {
+      e.preventDefault()
+      console.log("[v0] Search button clicked")
+      searchInConversation(searchInput.value)
+    })
+
+    searchInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault()
+        console.log("[v0] Search enter pressed")
+        searchInConversation(searchInput.value)
+      }
+    })
+
+    document.getElementById("search-next").addEventListener("click", nextSearchResult)
+    document.getElementById("search-prev").addEventListener("click", prevSearchResult)
+    document.getElementById("search-clear").addEventListener("click", clearSearch)
+
+    // Toggle panel
+    document.getElementById("nav-toggle").addEventListener("click", () => {
+      const content = document.getElementById("nav-content")
+      const toggle = document.getElementById("nav-toggle")
+      const isCollapsed = content.style.display === "none"
+
+      content.style.display = isCollapsed ? "block" : "none"
+      toggle.textContent = isCollapsed ? "−" : "+"
+    })
+
+    // Keyboard shortcuts
+    document.addEventListener("keydown", (e) => {
+      if (e.ctrlKey || e.metaKey) {
+        switch (e.key) {
+          case "Home":
+            e.preventDefault()
+            scrollToTop()
+            break
+          case "End":
+            e.preventDefault()
+            scrollToBottom()
+            break
+          case "f":
+            if (e.shiftKey) {
+              e.preventDefault()
+              searchInput.focus()
+            }
+            break
+        }
+      }
+
+      if (searchResults.length > 0) {
+        if (e.key === "F3") {
+          e.preventDefault()
+          if (e.shiftKey) {
+            prevSearchResult()
+          } else {
+            nextSearchResult()
+          }
+        }
+      }
+    })
+
+    console.log("[v0] Event listeners attached")
+  }
+
+  // Wait for page to load and initialize
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init)
+  } else {
+    init()
+  }
+
+  // Re-initialize on navigation (for SPA)
+  let lastUrl = location.href
+  new MutationObserver(() => {
+    const url = location.href
+    if (url !== lastUrl) {
+      lastUrl = url
+      setTimeout(init, 1000)
+    }
+  }).observe(document, { subtree: true, childList: true })
+})()

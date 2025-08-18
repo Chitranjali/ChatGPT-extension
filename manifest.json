@@ -1,14 +1,18 @@
 {
   "manifest_version": 3,
-  "name": "ChatGPT Sidebar Navigator",
+  "name": "ChatGPT Navigator",
   "version": "1.0",
-  "description": "Sidebar for searching and navigating long ChatGPT conversations.",
-  "permissions": ["scripting", "activeTab"],
+  "description": "A simple sidebar navigator for ChatGPT: scroll, search, and jump easily.",
+  "icons": {
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
   "content_scripts": [
     {
-      "matches": ["https://chat.openai.com/*"],
+      "matches": ["https://chatgpt.com/*"],
       "js": ["content.js"],
       "css": ["styles.css"]
     }
-  ]
+  ],
+  "permissions": []
 }

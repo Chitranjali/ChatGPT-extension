@@ -3,10 +3,6 @@
   "name": "ChatGPT Navigator",
   "version": "1.0",
   "description": "A simple sidebar navigator for ChatGPT: scroll, search, and jump easily.",
-  "icons": {
-    "48": "icon48.png",
-    "128": "icon128.png"
-  },
   "content_scripts": [
     {
       "matches": ["https://chatgpt.com/*"],

@@ -51,79 +51,116 @@
   }
 
   function findChatContainer() {
-    // ChatGPT-specific selectors in order of preference
     const selectors = [
       'main[class*="main"]',
       'div[class*="conversation"]',
       'div[class*="chat"]',
-      "main",
-      '[role="main"]',
       "div.flex-1.overflow-hidden",
       "div.h-full.overflow-auto",
+      "main",
+      '[role="main"]',
+      'div[class*="scroll"]',
+      "div.overflow-y-auto",
     ]
 
     for (const selector of selectors) {
       const container = document.querySelector(selector)
-      if (container && container.scrollHeight > container.clientHeight) {
-        console.log("[v0] Found scrollable container:", selector, container)
+      if (
+        container &&
+        (container.scrollHeight > container.clientHeight || container === document.querySelector("main"))
+      ) {
+        console.log("[v0] Found chat container:", selector, container)
         return container
       }
     }
 
-    console.log("[v0] No scrollable container found, using window")
-    return null
+    console.log("[v0] No specific container found, using document.documentElement")
+    return document.documentElement
   }
 
   function scrollToTop() {
-    console.log("[v0] Attempting to scroll to top...")
+    console.log("[v0] Scroll to top initiated - independent of search")
 
     const container = findChatContainer()
 
-    if (container) {
-      console.log("[v0] Scrolling container to top")
-      container.scrollTo({ top: 0, behavior: "smooth" })
+    try {
+      if (container && container !== document.documentElement) {
+        console.log("[v0] Scrolling container to top")
+        container.scrollTo({ top: 0, behavior: "smooth" })
 
-      // Backup method
-      setTimeout(() => {
-        container.scrollTop = 0
-      }, 100)
-    } else {
-      console.log("[v0] Using window scroll to top")
+        // Immediate fallback
+        setTimeout(() => {
+          container.scrollTop = 0
+        }, 50)
+      }
+
+      // Always try window scroll as well
+      console.log("[v0] Also scrolling window to top")
       window.scrollTo({ top: 0, behavior: "smooth" })
+
+      // Force scroll fallback
       setTimeout(() => {
         window.scrollTo(0, 0)
+        if (container && container !== document.documentElement) {
+          container.scrollTop = 0
+        }
       }, 100)
+    } catch (error) {
+      console.error("[v0] Error in scrollToTop:", error)
+      // Emergency fallback
+      window.scrollTo(0, 0)
     }
   }
 
   function scrollToBottom() {
-    console.log("[v0] Attempting to scroll to bottom...")
+    console.log("[v0] Scroll to bottom initiated - independent of search")
 
     const container = findChatContainer()
 
-    if (container) {
-      const scrollHeight = container.scrollHeight
-      console.log("[v0] Scrolling container to bottom, scrollHeight:", scrollHeight)
+    try {
+      if (container && container !== document.documentElement) {
+        const scrollHeight = container.scrollHeight
+        console.log("[v0] Container scrollHeight:", scrollHeight)
 
-      // Primary method
-      container.scrollTo({ top: scrollHeight, behavior: "smooth" })
+        container.scrollTo({ top: scrollHeight, behavior: "smooth" })
 
-      // Backup methods
-      setTimeout(() => {
-        container.scrollTop = container.scrollHeight
-      }, 100)
+        // Multiple fallback attempts
+        setTimeout(() => {
+          container.scrollTop = container.scrollHeight
+        }, 50)
 
-      setTimeout(() => {
-        container.scrollTop = container.scrollHeight
-      }, 500)
-    } else {
-      console.log("[v0] Using window scroll to bottom")
-      const docHeight = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)
+        setTimeout(() => {
+          container.scrollTop = container.scrollHeight
+        }, 200)
+
+        setTimeout(() => {
+          container.scrollTop = container.scrollHeight
+        }, 500)
+      }
+
+      // Always try window scroll as well
+      const docHeight = Math.max(
+        document.body.scrollHeight,
+        document.documentElement.scrollHeight,
+        document.body.offsetHeight,
+        document.documentElement.offsetHeight,
+      )
+
+      console.log("[v0] Document height:", docHeight)
       window.scrollTo({ top: docHeight, behavior: "smooth" })
 
+      // Force scroll fallback
       setTimeout(() => {
-        window.scrollTo(0, document.body.scrollHeight)
+        window.scrollTo(0, docHeight)
+        if (container && container !== document.documentElement) {
+          container.scrollTop = container.scrollHeight
+        }
       }, 100)
+    } catch (error) {
+      console.error("[v0] Error in scrollToBottom:", error)
+      // Emergency fallback
+      const docHeight = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)
+      window.scrollTo(0, docHeight)
     }
   }
 
@@ -314,17 +351,19 @@
       if (scrollTopBtn && scrollBottomBtn) {
         scrollTopBtn.addEventListener("click", (e) => {
           e.preventDefault()
-          console.log("[v0] Top button clicked")
+          e.stopPropagation()
+          console.log("[v0] Top button clicked - scrolling to chat top")
           scrollToTop()
         })
 
         scrollBottomBtn.addEventListener("click", (e) => {
           e.preventDefault()
-          console.log("[v0] Bottom button clicked")
+          e.stopPropagation()
+          console.log("[v0] Bottom button clicked - scrolling to chat bottom")
           scrollToBottom()
         })
 
-        console.log("[v0] Scroll buttons initialized")
+        console.log("[v0] Scroll buttons initialized with enhanced handlers")
       }
 
       const searchInput = document.getElementById("search-input")

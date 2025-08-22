@@ -344,28 +344,6 @@
       const panel = createNavigationPanel()
       console.log("[v0] Navigation panel created")
 
-      // Event listeners with error handling
-      const scrollTopBtn = document.getElementById("scroll-top")
-      const scrollBottomBtn = document.getElementById("scroll-bottom")
-
-      if (scrollTopBtn && scrollBottomBtn) {
-        scrollTopBtn.addEventListener("click", (e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          console.log("[v0] Top button clicked - scrolling to chat top")
-          scrollToTop()
-        })
-
-        scrollBottomBtn.addEventListener("click", (e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          console.log("[v0] Bottom button clicked - scrolling to chat bottom")
-          scrollToBottom()
-        })
-
-        console.log("[v0] Scroll buttons initialized with enhanced handlers")
-      }
-
       const searchInput = document.getElementById("search-input")
       const searchBtn = document.getElementById("search-btn")
 

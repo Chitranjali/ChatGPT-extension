@@ -1,4 +1,4 @@
-
+// ChatGPT Navigator Extension - Complete Rewrite
 ;(() => {
   let searchIndex = 0
   let searchResults = []
@@ -102,27 +102,44 @@
     const container = findChatContainer()
 
     try {
-      if (container && container !== document.documentElement) {
-        console.log("[v0] Scrolling container to top")
-        container.scrollTo({ top: 0, behavior: "smooth" })
-
-        // Immediate fallback
-        setTimeout(() => {
-          container.scrollTop = 0
-        }, 50)
+      const forceTop = () => {
+        if (
+          container === document.scrollingElement ||
+          container === document.documentElement ||
+          container === document.body
+        ) {
+          window.scrollTo({ top: 0, behavior: "smooth" })
+        } else {
+          container.scrollTo({ top: 0, behavior: "smooth" })
+        }
       }
 
-      // Always try window scroll as well
-      console.log("[v0] Also scrolling window to top")
-      window.scrollTo({ top: 0, behavior: "smooth" })
+      // Initial smooth scroll
+      forceTop()
 
-      // Force scroll fallback
+      // Nudge after minor layout changes (images/math rendering, etc.)
+      setTimeout(forceTop, 120)
+
+      // Hard-set and ensure first message is visible as a final fallback
       setTimeout(() => {
-        window.scrollTo(0, 0)
-        if (container && container !== document.documentElement) {
+        if (container && container !== document.documentElement && container !== document.body) {
           container.scrollTop = 0
+        } else {
+          window.scrollTo(0, 0)
         }
-      }, 100)
+
+        const root = document.querySelector('[data-testid="conversation-turns"]') || document.querySelector("main")
+
+        if (root) {
+          const first =
+            root.querySelector('[data-testid^="conversation-turn-"]') ||
+            root.querySelector("article, .markdown, .prose")
+
+          if (first && first.scrollIntoView) {
+            first.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" })
+          }
+        }
+      }, 260)
     } catch (error) {
       console.error("[v0] Error in scrollToTop:", error)
       // Emergency fallback

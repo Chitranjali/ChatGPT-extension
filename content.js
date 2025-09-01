@@ -1,4 +1,3 @@
-// ChatGPT Navigator Extension - Complete Rewrite
 ;(() => {
   let searchIndex = 0
   let searchResults = []
@@ -64,15 +63,13 @@
   }
 
   function findChatContainer() {
-    // Prefer the single-chat conversation turns root
     const turns = document.querySelector('[data-testid="conversation-turns"]')
     if (turns) {
       const scrollable = getScrollableAncestor(turns)
-      console.log("[v0] Using scrollable ancestor of conversation turns:", scrollable)
+      console.log("Using scrollable ancestor of conversation turns:", scrollable)
       return scrollable
     }
 
-    // Fallbacks (kept from previous logic)
     const selectors = [
       'main[class*="main"]',
       'div[class*="conversation"]',
@@ -87,17 +84,17 @@
     for (const selector of selectors) {
       const container = document.querySelector(selector)
       if (container && (container.scrollHeight > container.clientHeight || selector === "main")) {
-        console.log("[v0] Found chat container via fallback:", selector, container)
+        console.log("Found chat container via fallback:", selector, container)
         return container
       }
     }
 
-    console.log("[v0] No specific container found, using document.scrollingElement")
+    console.log("No specific container found, using document.scrollingElement")
     return document.scrollingElement || document.documentElement
   }
 
   function scrollToTop() {
-    console.log("[v0] Scroll to top initiated - independent of search")
+    console.log("Scroll to top initiated - independent of search")
 
     const container = findChatContainer()
 
@@ -114,13 +111,13 @@
         }
       }
 
-      // Initial smooth scroll
+      
       forceTop()
 
-      // Nudge after minor layout changes (images/math rendering, etc.)
+     
       setTimeout(forceTop, 120)
 
-      // Hard-set and ensure first message is visible as a final fallback
+      
       setTimeout(() => {
         if (container && container !== document.documentElement && container !== document.body) {
           container.scrollTop = 0
@@ -141,14 +138,13 @@
         }
       }, 260)
     } catch (error) {
-      console.error("[v0] Error in scrollToTop:", error)
-      // Emergency fallback
+      console.error("Error in scrollToTop:", error)
       window.scrollTo(0, 0)
     }
   }
 
   function scrollToBottom() {
-    console.log("[v0] Scroll to bottom initiated - independent of search")
+    console.log("Scroll to bottom initiated - independent of search")
     const container = findChatContainer()
 
     try {
@@ -158,11 +154,9 @@
       }
 
       toBottom()
-      // nudge after layout settles (images/latex/ascii math can expand)
       setTimeout(toBottom, 120)
       setTimeout(() => {
-        container.scrollTop = container.scrollHeight // hard set
-        // also try last message as a final fallback
+        container.scrollTop = container.scrollHeight 
         const root = document.querySelector('[data-testid="conversation-turns"]') || document.querySelector("main")
         const candidates = root
           ? root.querySelectorAll('[data-testid^="conversation-turn-"], article, .markdown, .prose')
@@ -178,7 +172,6 @@
   }
 
   function findChatMessages() {
-    // ChatGPT-specific message selectors
     const messageSelectors = [
       "[data-message-author-role]",
       'div[class*="group"]',
@@ -193,19 +186,18 @@
     for (const selector of messageSelectors) {
       const elements = document.querySelectorAll(selector)
       if (elements.length > 0) {
-        console.log("[v0] Found messages with selector:", selector, elements.length)
+        console.log("Found messages with selector:", selector, elements.length)
         messages = Array.from(elements)
         break
       }
     }
 
-    // Filter out non-message elements
     messages = messages.filter((msg) => {
       const text = msg.textContent.trim()
-      return text.length > 10 // Only include substantial content
+      return text.length > 10 
     })
 
-    console.log("[v0] Total valid messages found:", messages.length)
+    console.log("Total valid messages found:", messages.length)
     return messages
   }
 
@@ -286,11 +278,7 @@
       while (true) {
         const idx = lower.indexOf(q, i)
         if (idx === -1) break
-
-        // before
         if (idx > i) frag.appendChild(document.createTextNode(text.slice(i, idx)))
-
-        // match
         const mark = document.createElement("mark")
         mark.className = "search-highlight"
         mark.textContent = text.slice(idx, idx + q.length)
@@ -300,7 +288,7 @@
         i = idx + q.length
       }
 
-      // after
+      
       frag.appendChild(document.createTextNode(text.slice(i)))
 
       textNode.parentNode.replaceChild(frag, textNode)
@@ -310,7 +298,7 @@
   }
 
   function searchInConversation(term) {
-    console.log("[v0] Searching for term:", term)
+    console.log("Searching for term:", term)
     const input = (term || "").trim()
     if (!input) {
       clearHighlights()
@@ -329,7 +317,7 @@
     const root =
       document.querySelector('[data-testid="conversation-turns"]') || document.querySelector("main") || document.body
     const marks = highlightInRoot(root, input)
-    searchResults = marks // store marks directly
+    searchResults = marks 
 
     console.log("[v0] Total matches (highlights):", searchResults.length)
     updateSearchInfo()
@@ -344,7 +332,7 @@
 
     document.querySelectorAll(".search-highlight.active").forEach((el) => el.classList.remove("active"))
 
-    // clamp/wrap index
+    
     searchIndex = ((index % searchResults.length) + searchResults.length) % searchResults.length
     const mark = searchResults[searchIndex]
 
@@ -370,18 +358,16 @@
   }
 
   function init() {
-    console.log("[v0] Initializing ChatGPT Navigator...")
+    console.log("Initializing ChatGPT Navigator...")
 
     if (document.getElementById("chatgpt-navigator")) {
-      console.log("[v0] Navigator already exists")
+      console.log("Navigator already exists")
       return
     }
 
     try {
       const panel = createNavigationPanel()
-      console.log("[v0] Navigation panel created")
-
-      // Attach scroll controls
+      console.log("Navigation panel created")
       const topBtn = document.getElementById("scroll-top")
       const bottomBtn = document.getElementById("scroll-bottom")
       if (topBtn)
@@ -394,8 +380,6 @@
           e.preventDefault()
           scrollToBottom()
         })
-
-      // Search controls
       const searchInput = document.getElementById("search-input")
       const searchBtn = document.getElementById("search-btn")
       if (searchInput && searchBtn) {
@@ -434,8 +418,6 @@
           currentSearchTerm = ""
           updateSearchInfo()
         })
-
-      // Toggle panel
       const toggleBtn = document.getElementById("nav-toggle")
       if (toggleBtn) {
         toggleBtn.addEventListener("click", () => {
@@ -446,9 +428,9 @@
         })
       }
 
-      console.log("[v0] ChatGPT Navigator initialized successfully")
+      console.log("ChatGPT Navigator initialized successfully")
     } catch (error) {
-      console.error("[v0] Error initializing navigator:", error)
+      console.error("Error initializing navigator:", error)
     }
   }
 
@@ -460,7 +442,7 @@
       }
     }, 100)
 
-    // Fallback timeout
+    
     setTimeout(() => {
       clearInterval(checkInterval)
       init()
@@ -473,7 +455,7 @@
     waitForChatGPT()
   }
 
-  // Handle SPA navigation
+  
   let lastUrl = location.href
   new MutationObserver(() => {
     const url = location.href

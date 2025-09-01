@@ -2,7 +2,6 @@
 #chatgpt-navigator {
   position: fixed;
   top: 20px;
-  /* shifted left to avoid overlapping temporary chat button */
   right: 80px;
   background: rgba(255, 255, 255, 0.95);
   border: 1px solid #e5e5e5;
@@ -321,6 +320,4 @@
   box-sizing: border-box;
 }
 
-/* no CSS changes required for functionality; keeping responsive spacing and position */
-/* This block intentionally left minimal to avoid overlap with ChatGPT UI. */
-/* If future UI collisions occur, adjust #chatgpt-navigator top/right values slightly. */
+

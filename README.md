@@ -7,8 +7,3 @@ This repository contains a lightweight Chrome extension that makes ChatGPT easie
 ✅ Quick navigation – Each search result has a button to jump directly to that message.<br>
 ✅ Responsive design – Sidebar adapts to different screen sizes on desktop/laptop.<br>
 ✅ Lightweight & simple CSS – No external frameworks, minimal performance impact.<br>
-✅Keyboard Shortcuts -<br>
-Ctrl + Home - Scroll to top<br>
-Ctrl + End - Scroll to bottom<br>
-Ctrl + Shift + F - Focus search<br>
-F3 - Next search result<br>

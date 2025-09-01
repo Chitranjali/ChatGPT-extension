@@ -1,16 +1,21 @@
-
 {
   "manifest_version": 3,
-  "name": "ChatGPT Navigator",
-  "version": "1.0",
-  "description": "Navigate ChatGPT conversations with scroll controls and search functionality",
-  "permissions": ["activeTab"],
+  "name": "ChatGPT Single-Chat Navigator",
+  "version": "1.0.0",
+  "description": "Scroll to top/bottom and search within the current ChatGPT conversation.",
   "content_scripts": [
     {
-      "matches": ["https://chat.openai.com/*", "https://chatgpt.com/*"],
+      "matches": [
+        "https://chat.openai.com/*",
+        "https://chatgpt.com/*"
+      ],
       "js": ["content.js"],
       "css": ["styles.css"],
-      "run_at": "document_end"
+      "run_at": "document_idle"
     }
-  ]
+  ],
+  "icons": {
+    "16": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNOC4wMDIgMiA0LjUgNi4wMDNoNy4wMUw4LjAwMiAyWiIgZmlsbD0iIzM5NGFFNiIvPjxwYXRoIGQ9Ik04IDR2MTBhMSAxIDAgMCAwIDIgMFY0YTEgMSAwIDAgMC0yIDBaIiBmaWxsPSIjMzk0QUU2Ii8+PC9zdmc+",
+    "48": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMjQgNiAxNiAyNEgzMiAxNnoiIGZpbGw9IiMzOTRBRTYiLz48cGF0aCBkPSJNMTkgMTJ2MjRhMiAyIDAgMCAwIDQgMFYxMmEyIDIgMCAwIDAtNCAwWiIgZmlsbD0iIzM5NEFFNiIvPjwvc3ZnPg=="
+  }
 }

@@ -1,429 +1,352 @@
-// ChatGPT Navigator Extension - Complete Rewrite
-;(() => {
-  let searchIndex = 0
-  let searchResults = []
-  let currentSearchTerm = ""
+// ChatGPT Single-Chat Navigator
+(() => {
+  "use strict";
 
-  function createNavigationPanel() {
-    const panel = document.createElement("div")
-    panel.id = "chatgpt-navigator"
-    panel.innerHTML = `
-      <div class="nav-header">
-        <span class="nav-title">Chat Navigator</span>
-        <button class="nav-toggle" id="nav-toggle">−</button>
-      </div>
-      <div class="nav-content" id="nav-content">
-        <div class="nav-buttons">
-          <button class="nav-btn" id="scroll-top" title="Scroll to Top of Chat">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M8 2L4 6h8L8 2zM8 14V6"/>
-            </svg>
-            Top
-          </button>
-          <button class="nav-btn" id="scroll-bottom" title="Scroll to Bottom of Chat">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M8 14l4-4H4l4 4zM8 2v8"/>
-            </svg>
-            Bottom
-          </button>
-        </div>
-        <div class="search-container">
-          <div class="search-input-container">
-            <input type="text" id="search-input" placeholder="Search in this chat..." />
-            <button class="search-btn" id="search-btn" title="Search">
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
-              </svg>
-            </button>
-          </div>
-          <div class="search-controls" id="search-controls" style="display: none;">
-            <span class="search-info" id="search-info">0 of 0</span>
-            <button class="search-nav-btn" id="search-prev" title="Previous">↑</button>
-            <button class="search-nav-btn" id="search-next" title="Next">↓</button>
-            <button class="search-nav-btn" id="search-clear" title="Clear">×</button>
-          </div>
-        </div>
-      </div>
-    `
+  if (window.__cgn_initialized) return;
+  window.__cgn_initialized = true;
 
-    document.body.appendChild(panel)
-    return panel
-  }
+  // State
+  let highlights = [];
+  let currentIndex = -1;
+  let currentQuery = "";
 
-  function findChatContainer() {
-    const selectors = [
-      'main[class*="main"]',
-      'div[class*="conversation"]',
-      'div[class*="chat"]',
-      "div.flex-1.overflow-hidden",
-      "div.h-full.overflow-auto",
-      "main",
-      '[role="main"]',
-      'div[class*="scroll"]',
-      "div.overflow-y-auto",
-    ]
+  // Utility: log
+  const log = (...args) => console.log("[cgn]", ...args);
 
-    for (const selector of selectors) {
-      const container = document.querySelector(selector)
-      if (
-        container &&
-        (container.scrollHeight > container.clientHeight || container === document.querySelector("main"))
-      ) {
-        console.log("[v0] Found chat container:", selector, container)
-        return container
-      }
+  // Find the active chat container (single chat only)
+  function getChatContainer() {
+    // 1) Preferred: conversation turns container
+    let root =
+      document.querySelector('[data-testid="conversation-turns"]') ||
+      document.querySelector('main [data-testid="conversation-turns"]');
+
+    // 2) Other known containers with many messages
+    if (!root) {
+      root =
+        document.querySelector('main .overflow-y-auto') ||
+        document.querySelector('main [class*="overflow-y-auto"]') ||
+        document.querySelector('main section') ||
+        document.querySelector('main');
     }
 
-    console.log("[v0] No specific container found, using document.documentElement")
-    return document.documentElement
+    // Fallback: body/scrolling element
+    if (!root) root = document.scrollingElement || document.documentElement;
+
+    // Find the closest scrollable ancestor for the root
+    const scrollable = findScrollableAncestor(root) || document.scrollingElement || document.documentElement;
+    return { root, scrollable };
   }
 
-  function scrollToTop() {
-    console.log("[v0] Scroll to top initiated - independent of search")
-
-    const container = findChatContainer()
-
-    try {
-      if (container && container !== document.documentElement) {
-        console.log("[v0] Scrolling container to top")
-        container.scrollTo({ top: 0, behavior: "smooth" })
-
-        // Immediate fallback
-        setTimeout(() => {
-          container.scrollTop = 0
-        }, 50)
+  function findScrollableAncestor(el) {
+    if (!el) return null;
+    let node = el;
+    while (node && node !== document.body) {
+      const style = window.getComputedStyle(node);
+      const overflowY = style.overflowY;
+      const canScroll = node.scrollHeight > node.clientHeight;
+      if (canScroll && (overflowY === "auto" || overflowY === "scroll")) {
+        return node;
       }
+      node = node.parentElement;
+    }
+    return null;
+  }
 
-      // Always try window scroll as well
-      console.log("[v0] Also scrolling window to top")
-      window.scrollTo({ top: 0, behavior: "smooth" })
-
-      // Force scroll fallback
-      setTimeout(() => {
-        window.scrollTo(0, 0)
-        if (container && container !== document.documentElement) {
-          container.scrollTop = 0
-        }
-      }, 100)
-    } catch (error) {
-      console.error("[v0] Error in scrollToTop:", error)
-      // Emergency fallback
-      window.scrollTo(0, 0)
+  // Scroll controls (independent of search)
+  function scrollToTop() {
+    const { scrollable } = getChatContainer();
+    if (!scrollable) return;
+    try {
+      scrollable.scrollTo({ top: 0, behavior: "smooth" });
+    } catch {
+      scrollable.scrollTop = 0;
     }
   }
 
   function scrollToBottom() {
-    console.log("[v0] Scroll to bottom initiated - independent of search")
+    const { root, scrollable } = getChatContainer();
+    if (!scrollable) return;
 
-    const container = findChatContainer()
-
+    // Try to scroll the container
+    const targetTop = scrollable.scrollHeight - scrollable.clientHeight;
     try {
-      if (container && container !== document.documentElement) {
-        const scrollHeight = container.scrollHeight
-        console.log("[v0] Container scrollHeight:", scrollHeight)
+      scrollable.scrollTo({ top: targetTop, behavior: "smooth" });
+    } catch {
+      scrollable.scrollTop = targetTop;
+    }
 
-        container.scrollTo({ top: scrollHeight, behavior: "smooth" })
-
-        // Multiple fallback attempts
-        setTimeout(() => {
-          container.scrollTop = container.scrollHeight
-        }, 50)
-
-        setTimeout(() => {
-          container.scrollTop = container.scrollHeight
-        }, 200)
-
-        setTimeout(() => {
-          container.scrollTop = container.scrollHeight
-        }, 500)
-      }
-
-      // Always try window scroll as well
-      const docHeight = Math.max(
-        document.body.scrollHeight,
-        document.documentElement.scrollHeight,
-        document.body.offsetHeight,
-        document.documentElement.offsetHeight,
-      )
-
-      console.log("[v0] Document height:", docHeight)
-      window.scrollTo({ top: docHeight, behavior: "smooth" })
-
-      // Force scroll fallback
-      setTimeout(() => {
-        window.scrollTo(0, docHeight)
-        if (container && container !== document.documentElement) {
-          container.scrollTop = container.scrollHeight
-        }
-      }, 100)
-    } catch (error) {
-      console.error("[v0] Error in scrollToBottom:", error)
-      // Emergency fallback
-      const docHeight = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)
-      window.scrollTo(0, docHeight)
+    // Also attempt to bring the last visible message into view as a fallback
+    const lastMsg = findAllMessageBlocks(root).pop();
+    if (lastMsg) {
+      lastMsg.scrollIntoView({ block: "end", behavior: "smooth" });
     }
   }
 
-  function findChatMessages() {
-    // ChatGPT-specific message selectors
-    const messageSelectors = [
-      "[data-message-author-role]",
-      'div[class*="group"]',
-      'div[class*="message"]',
-      ".conversation-turn",
-      "div.flex.flex-col.items-start",
-      "div.markdown",
-    ]
-
-    let messages = []
-
-    for (const selector of messageSelectors) {
-      const elements = document.querySelectorAll(selector)
-      if (elements.length > 0) {
-        console.log("[v0] Found messages with selector:", selector, elements.length)
-        messages = Array.from(elements)
-        break
-      }
-    }
-
-    // Filter out non-message elements
-    messages = messages.filter((msg) => {
-      const text = msg.textContent.trim()
-      return text.length > 10 // Only include substantial content
-    })
-
-    console.log("[v0] Total valid messages found:", messages.length)
-    return messages
+  // Message detection (single chat only)
+  function findAllMessageBlocks(root) {
+    if (!root) return [];
+    const selectors = [
+      '[data-testid^="conversation-turn-"]',
+      'div[data-message-author-role]',
+      'article', // many ChatGPT messages render as articles
+      '.markdown',
+      '.prose'
+    ];
+    const set = new Set();
+    selectors.forEach(sel => root.querySelectorAll(sel).forEach(el => set.add(el)));
+    // Filter out empty elements
+    return Array.from(set).filter(el => (el.textContent || "").trim().length > 0);
   }
 
-  function highlightText(element, term) {
-    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, {
-      acceptNode: (node) =>
-        node.textContent.toLowerCase().includes(term.toLowerCase())
-          ? NodeFilter.FILTER_ACCEPT
-          : NodeFilter.FILTER_REJECT,
-    })
-
-    const textNodes = []
-    let node
-    while ((node = walker.nextNode())) {
-      textNodes.push(node)
-    }
-
-    textNodes.forEach((textNode) => {
-      const parent = textNode.parentNode
-      if (parent && !parent.querySelector(".search-highlight")) {
-        const text = textNode.textContent
-        const regex = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi")
-        const highlightedHTML = text.replace(regex, '<mark class="search-highlight">$1</mark>')
-
-        if (highlightedHTML !== text) {
-          const wrapper = document.createElement("span")
-          wrapper.innerHTML = highlightedHTML
-          parent.replaceChild(wrapper, textNode)
-        }
-      }
-    })
-  }
-
+  // Search and highlight within single chat
   function clearHighlights() {
-    const highlights = document.querySelectorAll(".search-highlight")
-    highlights.forEach((highlight) => {
-      const parent = highlight.parentNode
-      if (parent) {
-        parent.replaceChild(document.createTextNode(highlight.textContent), highlight)
-        parent.normalize()
-      }
-    })
+    highlights.forEach(span => {
+      const parent = span.parentNode;
+      if (!parent) return;
+      parent.replaceChild(document.createTextNode(span.textContent), span);
+      parent.normalize();
+    });
+    highlights = [];
+    currentIndex = -1;
+    updateInfo();
   }
 
-  function searchInConversation(term) {
-    console.log("[v0] Searching for term:", term)
+  function searchInChat(query) {
+    const q = (query || "").trim();
+    if (!q) {
+      clearHighlights();
+      currentQuery = "";
+      return;
+    }
+    currentQuery = q;
 
-    if (!term.trim()) {
-      console.log("[v0] Empty search term")
-      return
+    clearHighlights();
+
+    const { root } = getChatContainer();
+    const blocks = findAllMessageBlocks(root);
+    if (blocks.length === 0) {
+      updateInfo();
+      return;
     }
 
-    clearHighlights()
-    searchResults = []
-    currentSearchTerm = term.trim()
+    const regex = new RegExp(escapeRegExp(q), "gi");
+    blocks.forEach(block => highlightInElement(block, regex));
 
-    const messages = findChatMessages()
-
-    messages.forEach((message, index) => {
-      const textContent = message.textContent.toLowerCase()
-      if (textContent.includes(currentSearchTerm.toLowerCase())) {
-        searchResults.push({
-          element: message,
-          index: index,
-        })
-
-        highlightText(message, currentSearchTerm)
-      }
-    })
-
-    console.log("[v0] Search results found:", searchResults.length)
-    updateSearchInfo()
-
-    if (searchResults.length > 0) {
-      searchIndex = 0
-      scrollToSearchResult(0)
+    // Move to first match
+    if (highlights.length > 0) {
+      currentIndex = 0;
+      focusCurrent();
     }
+    updateInfo();
   }
 
-  function scrollToSearchResult(index) {
-    if (searchResults.length === 0) return
-
-    // Remove previous active highlights
-    document.querySelectorAll(".search-highlight.active").forEach((el) => {
-      el.classList.remove("active")
-    })
-
-    const result = searchResults[index]
-    console.log("[v0] Scrolling to search result:", index + 1, "of", searchResults.length)
-
-    result.element.scrollIntoView({
-      behavior: "smooth",
-      block: "center",
-      inline: "nearest",
-    })
-
-    // Add active class to current result
-    const highlights = result.element.querySelectorAll(".search-highlight")
-    highlights.forEach((highlight) => highlight.classList.add("active"))
-  }
-
-  function updateSearchInfo() {
-    const info = document.getElementById("search-info")
-    const controls = document.getElementById("search-controls")
-
-    if (searchResults.length > 0) {
-      info.textContent = `${searchIndex + 1} of ${searchResults.length}`
-      controls.style.display = "flex"
-    } else if (currentSearchTerm) {
-      info.textContent = "No results"
-      controls.style.display = "flex"
-    } else {
-      controls.style.display = "none"
-    }
-  }
-
-  function nextSearchResult() {
-    if (searchResults.length === 0) return
-    searchIndex = (searchIndex + 1) % searchResults.length
-    scrollToSearchResult(searchIndex)
-    updateSearchInfo()
-  }
-
-  function prevSearchResult() {
-    if (searchResults.length === 0) return
-    searchIndex = (searchIndex - 1 + searchResults.length) % searchResults.length
-    scrollToSearchResult(searchIndex)
-    updateSearchInfo()
-  }
-
-  function clearSearch() {
-    clearHighlights()
-    searchResults = []
-    searchIndex = 0
-    currentSearchTerm = ""
-    document.getElementById("search-input").value = ""
-    updateSearchInfo()
-  }
-
-  function init() {
-    console.log("[v0] Initializing ChatGPT Navigator...")
-
-    if (document.getElementById("chatgpt-navigator")) {
-      console.log("[v0] Navigator already exists")
-      return
-    }
-
-    try {
-      const panel = createNavigationPanel()
-      console.log("[v0] Navigation panel created")
-
-      const searchInput = document.getElementById("search-input")
-      const searchBtn = document.getElementById("search-btn")
-
-      if (searchInput && searchBtn) {
-        searchBtn.addEventListener("click", (e) => {
-          e.preventDefault()
-          console.log("[v0] Search button clicked")
-          searchInConversation(searchInput.value)
-        })
-
-        searchInput.addEventListener("keypress", (e) => {
-          if (e.key === "Enter") {
-            e.preventDefault()
-            console.log("[v0] Search enter pressed")
-            searchInConversation(searchInput.value)
+  function highlightInElement(root, regex) {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        if (!node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        // Skip code/links/styles/scripts
+        let p = node.parentElement;
+        while (p) {
+          const tag = p.tagName?.toLowerCase();
+          if (tag === "code" || tag === "pre" || tag === "script" || tag === "style") {
+            return NodeFilter.FILTER_REJECT;
           }
-        })
+          p = p.parentElement;
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
 
-        console.log("[v0] Search functionality initialized")
+    const toProcess = [];
+    let textNode;
+    while ((textNode = walker.nextNode())) {
+      if (regex.test(textNode.nodeValue)) {
+        // Reset regex lastIndex for each node since we're reusing it
+        regex.lastIndex = 0;
+        toProcess.push(textNode);
+      }
+    }
+
+    toProcess.forEach(node => {
+      const frag = document.createDocumentFragment();
+      let lastIndex = 0;
+      let m;
+      const text = node.nodeValue;
+      regex.lastIndex = 0;
+
+      while ((m = regex.exec(text)) !== null) {
+        const before = text.slice(lastIndex, m.index);
+        if (before) frag.appendChild(document.createTextNode(before));
+
+        const mark = document.createElement("span");
+        mark.className = "cgn-highlight";
+        mark.textContent = m[0];
+        frag.appendChild(mark);
+        highlights.push(mark);
+
+        lastIndex = m.index + m[0].length;
       }
 
-      // Search navigation
-      const nextBtn = document.getElementById("search-next")
-      const prevBtn = document.getElementById("search-prev")
-      const clearBtn = document.getElementById("search-clear")
+      const after = text.slice(lastIndex);
+      if (after) frag.appendChild(document.createTextNode(after));
 
-      if (nextBtn) nextBtn.addEventListener("click", nextSearchResult)
-      if (prevBtn) prevBtn.addEventListener("click", prevSearchResult)
-      if (clearBtn) clearBtn.addEventListener("click", clearSearch)
+      node.parentNode.replaceChild(frag, node);
+    });
+  }
 
-      // Toggle panel
-      const toggleBtn = document.getElementById("nav-toggle")
-      if (toggleBtn) {
-        toggleBtn.addEventListener("click", () => {
-          const content = document.getElementById("nav-content")
-          const isCollapsed = content.style.display === "none"
-          content.style.display = isCollapsed ? "block" : "none"
-          toggleBtn.textContent = isCollapsed ? "−" : "+"
-        })
-      }
+  function escapeRegExp(s) {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
 
-      console.log("[v0] ChatGPT Navigator initialized successfully")
-    } catch (error) {
-      console.error("[v0] Error initializing navigator:", error)
+  function focusCurrent() {
+    if (highlights.length === 0 || currentIndex < 0) return;
+    document.querySelectorAll(".cgn-highlight.cgn-active").forEach(el => el.classList.remove("cgn-active"));
+    const el = highlights[currentIndex];
+    el.classList.add("cgn-active");
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+  }
+
+  function nextResult() {
+    if (highlights.length === 0) return;
+    currentIndex = (currentIndex + 1) % highlights.length;
+    focusCurrent();
+    updateInfo();
+  }
+
+  function prevResult() {
+    if (highlights.length === 0) return;
+    currentIndex = (currentIndex - 1 + highlights.length) % highlights.length;
+    focusCurrent();
+    updateInfo();
+  }
+
+  function updateInfo() {
+    const info = document.getElementById("cgn-info");
+    if (!info) return;
+    if (highlights.length === 0) {
+      info.textContent = currentQuery ? "0 of 0" : "";
+    } else {
+      info.textContent = `${currentIndex + 1} of ${highlights.length}`;
     }
   }
 
-  function waitForChatGPT() {
-    const checkInterval = setInterval(() => {
-      if (document.querySelector("main") || document.querySelector('[role="main"]')) {
-        clearInterval(checkInterval)
-        setTimeout(init, 500)
-      }
-    }, 100)
+  // UI
+  function createUI() {
+    if (document.getElementById("cgn-root")) return;
 
-    // Fallback timeout
-    setTimeout(() => {
-      clearInterval(checkInterval)
-      init()
-    }, 5000)
+    const root = document.createElement("div");
+    root.id = "cgn-root";
+    root.innerHTML = `
+      <div class="cgn-toolbar">
+        <button id="cgn-top" class="cgn-fab" title="Scroll to top of chat" aria-label="Scroll to top">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 4l-6 6h4v6h4v-6h4z"></path>
+          </svg>
+        </button>
+        <button id="cgn-bottom" class="cgn-fab" title="Scroll to bottom of chat" aria-label="Scroll to bottom">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 20l6-6h-4V8h-4v6H6z"></path>
+          </svg>
+        </button>
+      </div>
+
+      <div class="cgn-search">
+        <div class="cgn-search-row">
+          <input id="cgn-input" class="cgn-input" type="text" placeholder="Search in this chat..." aria-label="Search this chat" />
+          <button id="cgn-go" class="cgn-btn" title="Search" aria-label="Search">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <path d="M11.742 10.344a6.5 6.5 0 1 0-1.398 1.398l3.85 3.85a1 1 0 0 0 1.414-1.414l-3.85-3.85h-.016zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="cgn-controls">
+          <span id="cgn-info" class="cgn-info"></span>
+          <div class="cgn-arrows">
+            <button id="cgn-prev" class="cgn-mini" title="Previous" aria-label="Previous result">↑</button>
+            <button id="cgn-next" class="cgn-mini" title="Next" aria-label="Next result">↓</button>
+            <button id="cgn-clear" class="cgn-mini" title="Clear" aria-label="Clear search">×</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(root);
+
+    // Events
+    document.getElementById("cgn-top")?.addEventListener("click", scrollToTop);
+    document.getElementById("cgn-bottom")?.addEventListener("click", scrollToBottom);
+
+    const input = document.getElementById("cgn-input");
+    const go = document.getElementById("cgn-go");
+    const prev = document.getElementById("cgn-prev");
+    const next = document.getElementById("cgn-next");
+    const clear = document.getElementById("cgn-clear");
+
+    go?.addEventListener("click", () => searchInChat(input.value));
+    input?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") searchInChat(input.value);
+    });
+    prev?.addEventListener("click", prevResult);
+    next?.addEventListener("click", nextResult);
+    clear?.addEventListener("click", () => {
+      input.value = "";
+      currentQuery = "";
+      clearHighlights();
+    });
+
+    // Keyboard shortcuts (scoped to single chat navigation)
+    document.addEventListener("keydown", (e) => {
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === "Home") {
+          e.preventDefault();
+          scrollToTop();
+        } else if (e.key === "End") {
+          e.preventDefault();
+          scrollToBottom();
+        } else if (e.key.toLowerCase() === "f" && e.shiftKey) {
+          e.preventDefault();
+          input?.focus();
+        }
+      }
+      if (e.key === "F3") {
+        e.preventDefault();
+        if (e.shiftKey) {
+          prevResult();
+        } else {
+          nextResult();
+        }
+      }
+    });
+  }
+
+  // Re-init on SPA navigation or content changes
+  function setupObservers() {
+    // If UI is removed or route changes, restore
+    const mo = new MutationObserver(() => {
+      if (!document.getElementById("cgn-root")) {
+        createUI();
+      }
+    });
+    mo.observe(document.documentElement, { childList: true, subtree: true });
+
+    // Hook into history changes for chat route updates
+    const pushState = history.pushState;
+    history.pushState = function (...args) {
+      const ret = pushState.apply(this, args);
+      setTimeout(createUI, 250);
+      return ret;
+    };
+    window.addEventListener("popstate", () => setTimeout(createUI, 250));
+  }
+
+  // Init
+  function init() {
+    createUI();
+    setupObservers();
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", waitForChatGPT)
+    document.addEventListener("DOMContentLoaded", init, { once: true });
   } else {
-    waitForChatGPT()
+    init();
   }
-
-  // Handle SPA navigation
-  let lastUrl = location.href
-  new MutationObserver(() => {
-    const url = location.href
-    if (url !== lastUrl) {
-      lastUrl = url
-      console.log("[v0] URL changed, reinitializing...")
-      setTimeout(() => {
-        const existing = document.getElementById("chatgpt-navigator")
-        if (existing) existing.remove()
-        waitForChatGPT()
-      }, 1000)
-    }
-  }).observe(document, { subtree: true, childList: true })
-})()
+})();

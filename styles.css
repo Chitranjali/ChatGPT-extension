@@ -1,7 +1,6 @@
-/* ChatGPT Navigator Extension Styles */
 #chatgpt-navigator {
   position: fixed;
-  top: 20px;
+  top: 128px;
   right: 80px;
   background: rgba(255, 255, 255, 0.95);
   border: 1px solid #e5e5e5;
@@ -267,7 +266,8 @@
 /* Responsive design */
 @media (max-width: 768px) {
   #chatgpt-navigator {
-    top: 10px;
+    /* also lower on small screens to avoid overlap */
+    top: 96px;
     right: 10px;
     left: 10px;
     max-width: none;
@@ -295,6 +295,8 @@
 @media (max-width: 480px) {
   #chatgpt-navigator {
     font-size: 13px;
+    /* keep a comfortable gap on very small screens too */
+    top: 88px;
   }
 
   .nav-content {

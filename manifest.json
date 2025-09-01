@@ -1,14 +1,11 @@
 {
   "manifest_version": 3,
   "name": "ChatGPT Single-Chat Navigator",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Scroll to top/bottom and search within the current ChatGPT conversation.",
   "content_scripts": [
     {
-      "matches": [
-        "https://chat.openai.com/*",
-        "https://chatgpt.com/*"
-      ],
+      "matches": ["https://chat.openai.com/*", "https://chatgpt.com/*"],
       "js": ["content.js"],
       "css": ["styles.css"],
       "run_at": "document_idle"
